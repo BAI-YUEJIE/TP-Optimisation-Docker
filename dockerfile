@@ -11,12 +11,10 @@ WORKDIR /app
 # Creer un utilisateur non-root
 RUN addgroup -g 1001 -S nodejs && adduser -S nodejs -u 1001
 
-COPY --from=builder /app/node_modules ./node_modules
-COPY package*.json ./
-COPY server.js ./
-
-# Changer le proprietaire des fichiers
-RUN chown -R nodejs:nodejs /app
+# Copier avec le bon proprietaire directement
+COPY --from=builder --chown=nodejs:nodejs /app/node_modules ./node_modules
+COPY --chown=nodejs:nodejs package*.json ./
+COPY --chown=nodejs:nodejs server.js ./
 
 EXPOSE 3000
 ENV NODE_ENV=production
