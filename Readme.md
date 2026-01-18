@@ -372,3 +372,32 @@ node-app     opt4       f97149e85da9   30 minutes ago   208MB
 
 Cette etape n'impacte pas la taille mais ameliore significativement la securite de l'application.
 
+## Comparaison finale
+
+**Version baseline:**
+- Taille: 1.72 GB
+- Base: node:latest (Debian)
+- Environnement: development
+- User: root
+- Dependencies: dev + production + build tools
+
+**Version optimisee (opt5):**
+- Taille: 208 MB
+- Base: node:20-alpine
+- Environnement: production
+- User: nodejs (non-root)
+- Dependencies: production uniquement
+
+**Reduction totale: 1.51 GB (-87.9%)**
+
+## Conclusion
+
+Les optimisations principales:
+
+1. **Alpine Linux** (-87%): La plus grande reduction en passant de Debian a Alpine
+2. **Suppression build tools**: Pas besoin de build-essential en production
+3. **npm ci --only=production**: Exclusion des devDependencies
+4. **Multi-stage build**: Separation build/production, suppression des caches
+5. **Utilisateur non-root**: Securite sans impact sur la taille
+
+L'application fonctionne correctement avec une image 8 fois plus petite et plus securisee.
