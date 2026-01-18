@@ -20,6 +20,7 @@ Ce projet consiste à optimiser une application Node.js et son image Docker. L'o
 | Etape 2 | Image Alpine + suppression packages | 220 MB | -1.49 GB (-87%) |
 | Etape 3 | npm ci --only=production | 216 MB | -4 MB (-1.8%) |
 | Etape 4 | Multi-stage build | 208 MB | -8 MB (-3.7%) |
+| Etape 5 | Non-root user | 208 MB | 0 MB (securite) |
 
 ## Analyse de la version baseline
 
@@ -319,3 +320,55 @@ node-app     opt2       a429bd0b6616   48 minutes ago   220MB
 - Reduction: 8 MB (-3.7%)
 
 Le multi-stage build nettoie les caches npm et ne garde que les fichiers necessaires a l'execution.
+
+### Etape 5: Utilisateur non-root pour la securite
+
+**Modifications:**
+
+1. Creation d'un utilisateur `nodejs` (uid 1001)
+2. Utilisation de `--chown=nodejs:nodejs` dans les commandes COPY
+3. Passage de `USER root` a `USER nodejs`
+
+**Dockerfile:**
+```dockerfile
+RUN addgroup -g 1001 -S nodejs && adduser -S nodejs -u 1001
+COPY --from=builder --chown=nodejs:nodejs /app/node_modules ./node_modules
+COPY --chown=nodejs:nodejs package*.json ./
+COPY --chown=nodejs:nodejs server.js ./
+USER nodejs
+```
+
+**Explication:**
+
+Executer un conteneur en tant que root presente des risques de securite. Si l'application est compromise, l'attaquant aurait les privileges root. En creant un utilisateur non-root, on limite les degats potentiels.
+
+L'option `--chown` dans COPY permet de definir le proprietaire directement sans layer supplementaire.
+
+**Commandes:**
+```bash
+docker build -t node-app:opt5 .
+docker images node-app
+```
+
+**Test de securite:**
+```bash
+docker run -d -p 3000:3000 --name test-opt5 node-app:opt5
+curl http://localhost:3000
+docker stop test-opt5 && docker rm test-opt5
+```
+
+**Resultat:**
+```
+REPOSITORY   TAG        IMAGE ID       CREATED          SIZE
+node-app     opt5       3a1c75d3c348   1 second ago     208MB
+node-app     opt4       f97149e85da9   30 minutes ago   208MB
+```
+
+**Impact:**
+- Taille avant: 208 MB
+- Taille apres: 208 MB
+- Reduction: 0 MB (pas de changement de taille)
+- Amelioration: Securite renforcee
+
+Cette etape n'impacte pas la taille mais ameliore significativement la securite de l'application.
+
