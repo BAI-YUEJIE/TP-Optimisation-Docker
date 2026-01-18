@@ -19,6 +19,7 @@ Ce projet consiste à optimiser une application Node.js et son image Docker. L'o
 | Etape 1 | Ajout .dockerignore | 1.71 GB | -0.01 GB (-0.6%) |
 | Etape 2 | Image Alpine + suppression packages | 220 MB | -1.49 GB (-87%) |
 | Etape 3 | npm ci --only=production | 216 MB | -4 MB (-1.8%) |
+| Etape 4 | Multi-stage build | 208 MB | -8 MB (-3.7%) |
 
 ## Analyse de la version baseline
 
@@ -270,3 +271,51 @@ node-app     baseline   9aa186ba84ec   2 hours ago      1.72GB
 - Reduction: 4 MB (-1.8%)
 
 Bien que la reduction soit petite, c'est une bonne pratique pour eviter d'installer des outils de developpement en production.
+
+### Etape 4: Multi-stage build
+
+**Modifications:**
+
+Separation du Dockerfile en deux etapes:
+
+**Stage 1 - Builder:**
+```dockerfile
+FROM node:20-alpine AS builder
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci --only=production
+```
+
+**Stage 2 - Production:**
+```dockerfile
+FROM node:20-alpine
+WORKDIR /app
+COPY --from=builder /app/node_modules ./node_modules
+COPY package*.json ./
+COPY server.js ./
+```
+
+**Explication:**
+
+Le multi-stage build permet de separer l'environnement de build de l'environnement de production. On installe les dependencies dans la premiere etape, puis on copie uniquement ce qui est necessaire dans la deuxieme etape. Les caches npm et fichiers temporaires du build ne sont pas inclus dans l'image finale.
+
+**Commandes:**
+```bash
+docker build -t node-app:opt4 .
+docker images node-app
+```
+
+**Resultat:**
+```
+REPOSITORY   TAG        IMAGE ID       CREATED          SIZE
+node-app     opt4       f97149e85da9   6 seconds ago    208MB
+node-app     opt3       961da988957f   24 minutes ago   216MB
+node-app     opt2       a429bd0b6616   48 minutes ago   220MB
+```
+
+**Impact:**
+- Taille avant: 216 MB
+- Taille apres: 208 MB
+- Reduction: 8 MB (-3.7%)
+
+Le multi-stage build nettoie les caches npm et ne garde que les fichiers necessaires a l'execution.
