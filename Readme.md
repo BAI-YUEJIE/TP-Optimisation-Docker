@@ -18,6 +18,7 @@ Ce projet consiste à optimiser une application Node.js et son image Docker. L'o
 | Baseline | Version initiale | 1.72 GB | - |
 | Etape 1 | Ajout .dockerignore | 1.71 GB | -0.01 GB (-0.6%) |
 | Etape 2 | Image Alpine + suppression packages | 220 MB | -1.49 GB (-87%) |
+| Etape 3 | npm ci --only=production | 216 MB | -4 MB (-1.8%) |
 
 ## Analyse de la version baseline
 
@@ -235,3 +236,37 @@ node-app     baseline   9aa186ba84ec   2 hours ago     1.72GB
 - Reduction: 1.49 GB (-87%)
 
 Cette etape apporte la plus grande reduction de taille grace au passage a Alpine.
+
+### Etape 3: Utilisation de npm ci --only=production
+
+**Modifications:**
+
+1. Remplacement de `RUN npm install` par `RUN npm ci --only=production`
+2. Suppression de `RUN npm run build` (commande inutile)
+
+**Explication:**
+
+- `npm ci` est plus rapide et fiable que `npm install` car il utilise strictement package-lock.json
+- `--only=production` n'installe pas les devDependencies (comme nodemon) qui ne sont pas necessaires en production
+
+**Commandes:**
+```bash
+docker build -t node-app:opt3 .
+docker images node-app
+```
+
+**Resultat:**
+```
+REPOSITORY   TAG        IMAGE ID       CREATED          SIZE
+node-app     opt3       961da988957f   10 seconds ago   216MB
+node-app     opt2       a429bd0b6616   24 minutes ago   220MB
+node-app     opt1       7ed115fb295d   32 minutes ago   1.71GB
+node-app     baseline   9aa186ba84ec   2 hours ago      1.72GB
+```
+
+**Impact:**
+- Taille avant: 220 MB
+- Taille apres: 216 MB
+- Reduction: 4 MB (-1.8%)
+
+Bien que la reduction soit petite, c'est une bonne pratique pour eviter d'installer des outils de developpement en production.
