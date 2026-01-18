@@ -1,0 +1,46 @@
+# Dépendances
+node_modules
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+
+# Fichiers de développement
+.git
+.gitignore
+.dockerignore
+*.md
+README.md
+
+# Fichiers IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# Fichiers système
+.DS_Store
+Thumbs.db
+
+# Fichiers de test
+test
+tests
+*.test.js
+*.spec.js
+coverage
+
+# Fichiers temporaires
+tmp
+temp
+*.tmp
+
+# Fichiers de logs
+logs
+*.log
+
+# Fichiers de configuration locale
+.env
+.env.local
+.env.development
+.env.test
+.env.production
