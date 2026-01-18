@@ -16,6 +16,7 @@ Ce projet consiste à optimiser une application Node.js et son image Docker. L'o
 | Etape | Description | Taille | Reduction |
 |-------|-------------|--------|-----------|
 | Baseline | Version initiale | 1.72 GB | - |
+| Etape 1 | Ajout .dockerignore | 1.71 GB | -0.01 GB (-0.6%) |
 
 ## Analyse de la version baseline
 
@@ -168,3 +169,34 @@ test-baseline
 L'application fonctionne correctement mais l'image est tres volumineuse.
 
 ## Optimisations realisees
+
+### Etape 1: Ajout du .dockerignore et reorganisation du Dockerfile
+
+**Modifications:**
+
+1. Creation du fichier `.dockerignore`
+2. Modification du Dockerfile:
+   - Suppression de `COPY node_modules ./node_modules`
+   - Utilisation de `COPY package*.json ./` suivi de `npm install`
+
+**Commandes:**
+```bash
+docker build -t node-app:opt1 .
+docker images node-app
+```
+
+**Resultat:**
+```
+REPOSITORY   TAG        IMAGE ID       CREATED          SIZE
+node-app     opt1       7ed115fb295d   28 seconds ago   1.71GB
+node-app     baseline   9aa186ba84ec   2 hours ago      1.72GB
+```
+
+**Impact:**
+- Taille avant: 1.72 GB
+- Taille apres: 1.71 GB
+- Reduction: 0.01 GB (-0.6%)
+
+**Analyse:**
+
+La reduction est minime car l'image utilise toujours `node:latest` (base Debian de ~1GB) et installe build-essential (~300MB). Le .dockerignore ameliore surtout la vitesse de build en reduisant le contexte.
