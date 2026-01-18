@@ -17,6 +17,7 @@ Ce projet consiste à optimiser une application Node.js et son image Docker. L'o
 |-------|-------------|--------|-----------|
 | Baseline | Version initiale | 1.72 GB | - |
 | Etape 1 | Ajout .dockerignore | 1.71 GB | -0.01 GB (-0.6%) |
+| Etape 2 | Image Alpine + suppression packages | 220 MB | -1.49 GB (-87%) |
 
 ## Analyse de la version baseline
 
@@ -200,3 +201,37 @@ node-app     baseline   9aa186ba84ec   2 hours ago      1.72GB
 **Analyse:**
 
 La reduction est minime car l'image utilise toujours `node:latest` (base Debian de ~1GB) et installe build-essential (~300MB). Le .dockerignore ameliore surtout la vitesse de build en reduisant le contexte.
+
+### Etape 2: Migration vers Alpine et suppression des packages inutiles
+
+**Modifications:**
+
+1. Changement de l'image de base: `FROM node:latest` → `FROM node:20-alpine`
+2. Suppression de la ligne `apt-get install build-essential...` (inutile en production)
+3. Changement de `NODE_ENV=development` → `NODE_ENV=production`
+4. Reduction des ports exposes: `EXPOSE 3000 4000 5000` → `EXPOSE 3000`
+
+**Explication:**
+
+Alpine Linux est une distribution tres legere (environ 5MB) comparee a Debian (environ 124MB). En plus, on supprime les outils de compilation (build-essential, ~300MB) qui ne sont pas necessaires pour executer l'application.
+
+**Commandes:**
+```bash
+docker build -t node-app:opt2 .
+docker images node-app
+```
+
+**Resultat:**
+```
+REPOSITORY   TAG        IMAGE ID       CREATED         SIZE
+node-app     opt2       a429bd0b6616   9 seconds ago   220MB
+node-app     opt1       7ed115fb295d   7 minutes ago   1.71GB
+node-app     baseline   9aa186ba84ec   2 hours ago     1.72GB
+```
+
+**Impact:**
+- Taille avant: 1.71 GB
+- Taille apres: 220 MB
+- Reduction: 1.49 GB (-87%)
+
+Cette etape apporte la plus grande reduction de taille grace au passage a Alpine.
